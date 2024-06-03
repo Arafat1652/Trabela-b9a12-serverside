@@ -88,7 +88,7 @@ async function run() {
 
  // find tour type wise package
  app.get("/types/:tour_type", async(req, res) => {
-  console.log(req.params.tour_type);
+  // console.log(req.params.tour_type);
   const result = await packageCollection.find({tour_type: req.params.tour_type }).toArray();
   res.send(result)
 })
@@ -98,6 +98,15 @@ async function run() {
     const result = await storyCollection.find().toArray()
     res.send(result)
 })
+
+   // find a story by id for story details page
+   app.get('/storys/:id', async(req, res) => {
+    const id = req.params.id
+    const query = { _id: new ObjectId(id)};
+    const result = await storyCollection.findOne(query);
+    res.send(result)
+  })
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
