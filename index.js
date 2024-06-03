@@ -85,6 +85,12 @@ async function run() {
     res.send(result)
 })
 
+ // find tour type wise package
+ app.get("/types/:tour_type", async(req, res) => {
+  console.log(req.params.tour_type);
+  const result = await packageCollection.find({tour_type: req.params.tour_type }).toArray();
+  res.send(result)
+})
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
