@@ -35,6 +35,7 @@ async function run() {
     const packageCollection = client.db('travelDB').collection('packages')
     const userCollection = client.db('travelDB').collection('users')
     const typeCollection = client.db('travelDB').collection('types')
+    const storyCollection = client.db('travelDB').collection('storys')
 
 
     // get all package from package collection
@@ -42,6 +43,7 @@ async function run() {
         const result = await packageCollection.find().toArray()
         res.send(result)
     })
+
      // find a package by id for Package details page
   app.get('/packages/:id', async(req, res) => {
     const id = req.params.id
@@ -50,7 +52,6 @@ async function run() {
     res.send(result)
   })
 
-  
 
    // save a user data in db
    app.put('/user', async(req, res)=>{
@@ -90,6 +91,12 @@ async function run() {
   console.log(req.params.tour_type);
   const result = await packageCollection.find({tour_type: req.params.tour_type }).toArray();
   res.send(result)
+})
+
+   // get all storys type 
+   app.get('/storys', async(req, res) => {
+    const result = await storyCollection.find().toArray()
+    res.send(result)
 })
 
     // Send a ping to confirm a successful connection
