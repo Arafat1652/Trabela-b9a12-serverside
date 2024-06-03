@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 const cors = require('cors')
 const port = process.env.PORT || 5000;
 
@@ -33,12 +33,57 @@ async function run() {
     // await client.connect();
 
     const packageCollection = client.db('travelDB').collection('packages')
+    const userCollection = client.db('travelDB').collection('users')
+    const typeCollection = client.db('travelDB').collection('types')
+
 
     // get all package from package collection
     app.get('/packages', async(req, res)=>{
         const result = await packageCollection.find().toArray()
         res.send(result)
     })
+     // find a package by id for Package details page
+  app.get('/packages/:id', async(req, res) => {
+    const id = req.params.id
+    const query = { _id: new ObjectId(id)};
+    const result = await packageCollection.findOne(query);
+    res.send(result)
+  })
+
+  
+
+   // save a user data in db
+   app.put('/user', async(req, res)=>{
+    const user = req.body;
+    const query = {email: user?.email}
+    // check if user already exists in db
+    const isExist = await userCollection.findOne({email: user?.email})
+    if(isExist){
+    return res.send(isExist)
+    }
+
+      // save user for the first time
+    const options = {upsert: true}
+    const updateDoc={
+      $set:{
+        ...user,
+      }
+    }
+    const result = await userCollection.updateOne(query, updateDoc, options)
+    res.send(result)
+  })
+
+  // get all guides from db
+  app.get('/guides', async(req, res)=>{
+    const result = await userCollection.find({role: "guide"}).toArray()
+    res.send(result)
+  })
+
+  // get all tour type 
+  app.get('/types', async(req, res) => {
+    const result = await typeCollection.find().toArray()
+    res.send(result)
+})
 
 
     // Send a ping to confirm a successful connection
