@@ -51,6 +51,7 @@ async function run() {
     const userCollection = client.db('travelDB').collection('users')
     const typeCollection = client.db('travelDB').collection('types')
     const storyCollection = client.db('travelDB').collection('storys')
+    const bookingCollection = client.db('travelDB').collection('bookings')
 
 
     // get all package from package collection
@@ -67,33 +68,76 @@ async function run() {
     res.send(result)
   })
 
+  // get a user info by email from db
+  app.get('/user/:email', async(req,res)=>{
+    const email = req.params.email
+    // console.log(email);
+    const result = await userCollection.findOne({email: email})
+    res.send(result)
+  })
+
 
    // save a user data in db
-   app.put('/user', async(req, res)=>{
+   app.post('/user', async(req, res)=>{
     const user = req.body;
+    
     const query = {email: user?.email}
-    // check if user already exists in db
-    const isExist = await userCollection.findOne({email: user?.email})
+    const isExist = await userCollection.findOne(query)
     if(isExist){
-    return res.send(isExist)
+      return res.send({message: 'user already exists', insertedId: null})
     }
+    const result = await userCollection.insertOne(user)
+    res.send(result)
+  })
 
-      // save user for the first time
+  // for posting guide infos in guideInfos Collection
+  app.put('/user/:email', async(req, res) => {
+    const guideInfo = req.body;
+    const query = {email: guideInfo?.email}
     const options = {upsert: true}
     const updateDoc={
       $set:{
-        ...user,
+        ...guideInfo,
       }
     }
     const result = await userCollection.updateOne(query, updateDoc, options)
     res.send(result)
-  })
+})
+
+  //  app.put('/user', async(req, res)=>{
+  //   const user = req.body;
+  //   const query = {email: user?.email}
+  //   // check if user already exists in db
+  //   const isExist = await userCollection.findOne({email: user?.email})
+  //   if(isExist){
+  //   return res.send(isExist)
+  //   }
+
+  //     // save user for the first time
+  //   const options = {upsert: true}
+  //   const updateDoc={
+  //     $set:{
+  //       ...user,
+  //     }
+  //   }
+  //   const result = await userCollection.updateOne(query, updateDoc, options)
+  //   res.send(result)
+  // })
+
+  
 
   // get all guides from db
   app.get('/guides', async(req, res)=>{
     const result = await userCollection.find({role: "guide"}).toArray()
     res.send(result)
   })
+  app.get('/guides/:id', async(req, res)=>{
+    const id = req.params.id
+    const query = { _id: new ObjectId(id)};
+    const result = await userCollection.findOne(query);
+    res.send(result)
+  })
+
 
   // get all tour type 
   app.get('/types', async(req, res) => {
@@ -128,6 +172,23 @@ async function run() {
     const result = await storyCollection.insertOne(storyData)
     res.send(result)
 })
+
+    // save or post booking in the db
+  app.post('/bookings', async(req, res) => {
+    const bookData = req.body
+    const result = await bookingCollection.insertOne(bookData)
+    res.send(result)
+})
+
+
+  app.get('/my-bookings/:email', async(req,res)=>{
+    const email = req.params.email
+    console.log(email);
+    const result = await bookingCollection.find({tourist_email: email}).toArray()
+    res.send(result)
+  })
+
+    
 
 
     // Send a ping to confirm a successful connection
