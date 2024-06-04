@@ -1,14 +1,29 @@
 const express = require('express')
-const app = express()
+const cors = require('cors')
 require('dotenv').config()
 const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
-const cors = require('cors')
+const app = express()
 const port = process.env.PORT || 5000;
 
 
+// const corsOptions = {
+//   origin: [
+//     'http://localhost:5173','https://travel-advisor-a12.web.app','https://travel-advisor-a12.firebaseapp.com'
+//   ],
+//   credentials: true,
+//   optionSuccessStatus: 200,
+// }
+
 // middlewares
+app.use(
+    cors({
+      origin: [
+        'http://localhost:5173','https://travel-advisor-a12.web.app','https://travel-advisor-a12.firebaseapp.com'
+      ],
+      credentials: true,
+    })
+  );
 app.use(express.json())
-app.use(cors())
 
 
 
@@ -106,6 +121,13 @@ async function run() {
     const result = await storyCollection.findOne(query);
     res.send(result)
   })
+
+  // for posting a story in story collection 
+  app.post('/storys', async(req, res) => {
+    const storyData = req.body
+    const result = await storyCollection.insertOne(storyData)
+    res.send(result)
+})
 
 
     // Send a ping to confirm a successful connection
