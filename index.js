@@ -202,6 +202,14 @@ async function run() {
     res.send(result)
   })
 
+  // cancel a bookings from my bookings list -- tourist
+  app.delete('/cancelbook/:id', async(req, res)=>{
+    const id = req.params.id
+    const query = {_id: new ObjectId(id)}
+    const result = await bookingCollection.deleteOne(query)
+    res.send(result)
+  })
+
   // for guide getting my assing tour--> bookings
   app.get('/my-assignTour/:name', async(req,res)=>{
     const name = req.params.name
