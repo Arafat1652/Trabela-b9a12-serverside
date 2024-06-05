@@ -52,6 +52,7 @@ async function run() {
     const typeCollection = client.db('travelDB').collection('types')
     const storyCollection = client.db('travelDB').collection('storys')
     const bookingCollection = client.db('travelDB').collection('bookings')
+    const wishListCollection = client.db('travelDB').collection('wishLists')
 
 
     // get all package from package collection
@@ -197,7 +198,35 @@ async function run() {
     res.send(result)
   })
 
+    // save to wishLists collection-->  wishLists
+    app.post('/wishLists', async(req, res) => {
+      const wishData = req.body
+
+      // cheking same user and same package is exist?
+        const existingWish = await wishListCollection.findOne({
+            email: wishData.email,
+            package_name: wishData.package_name
+        });
+
+        if (existingWish) {
+            // if it exist
+            return res.status(400).send({ message: 'this item is already exist in your wish list' });
+        }
+        // then add in wishlist collection
+        const result = await wishListCollection.insertOne(wishData);
+        res.send(result);
     
+  })
+
+   // for guide getting my assing tour--> bookings
+   app.get('/my-wishlist/:email', async(req,res)=>{
+    const email = req.params.email
+    // console.log(name);
+    const result = await wishListCollection.find({email: email}).toArray()
+    res.send(result)
+  })
+
+  
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
