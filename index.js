@@ -104,6 +104,18 @@ async function run() {
     const result = await userCollection.updateOne(query, updateDoc, options)
     res.send(result)
 })
+  // update user status from tourist menu
+  app.put('/userStatus/:email', async(req, res) => {
+    const currentUser = req.body;
+    const query = {email: currentUser?.email}
+    // console.log(currentUser);
+    const options={upsert: true}
+    const updateDoc={
+      $set:{ status: currentUser?.status }
+    }
+    const result = await userCollection.updateOne(query, updateDoc, options)
+    res.send(result)
+})
 
   //  app.put('/user', async(req, res)=>{
   //   const user = req.body;
@@ -195,6 +207,20 @@ async function run() {
     const name = req.params.name
     // console.log(name);
     const result = await bookingCollection.find({guide_name: name}).toArray()
+    res.send(result)
+  })
+
+  // for guide update the tour status accept or reject
+  app.patch('/tourAccepted/:id', async(req, res)=>{
+    const id = req.params.id;
+    const accept = req.body
+    const filter = {_id: new ObjectId(id)};
+    const updateDoc = {
+      $set: {
+        status: accept.status
+      },
+    };
+    const result = await bookingCollection.updateOne(filter, updateDoc)
     res.send(result)
   })
 
