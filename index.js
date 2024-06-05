@@ -126,11 +126,12 @@ async function run() {
 
   
 
-  // get all guides from db
+  // get all guides from db--> users
   app.get('/guides', async(req, res)=>{
     const result = await userCollection.find({role: "guide"}).toArray()
     res.send(result)
   })
+  // get guides by his id
   app.get('/guides/:id', async(req, res)=>{
     const id = req.params.id
     const query = { _id: new ObjectId(id)};
@@ -139,26 +140,26 @@ async function run() {
   })
 
 
-  // get all tour type 
+  // get all tour type --> types
   app.get('/types', async(req, res) => {
     const result = await typeCollection.find().toArray()
     res.send(result)
 })
 
- // find tour type wise package
+ // find tour type wise package--> types
  app.get("/types/:tour_type", async(req, res) => {
   // console.log(req.params.tour_type);
   const result = await packageCollection.find({tour_type: req.params.tour_type }).toArray();
   res.send(result)
 })
 
-   // get all storys type 
+   // get all storys type -->storys
    app.get('/storys', async(req, res) => {
     const result = await storyCollection.find().toArray()
     res.send(result)
 })
 
-   // find a story by id for story details page
+   // find a story by id for story details page-->storys
    app.get('/storys/:id', async(req, res) => {
     const id = req.params.id
     const query = { _id: new ObjectId(id)};
@@ -166,22 +167,21 @@ async function run() {
     res.send(result)
   })
 
-  // for posting a story in story collection 
+  // for posting a story in story collection-->storys
   app.post('/storys', async(req, res) => {
     const storyData = req.body
     const result = await storyCollection.insertOne(storyData)
     res.send(result)
 })
 
-    // save or post booking in the db
+    // save or post booking in the db-->  bookings
   app.post('/bookings', async(req, res) => {
     const bookData = req.body
     const result = await bookingCollection.insertOne(bookData)
     res.send(result)
 })
 
-
-  // geting bookings by user
+  // geting bookings by user-->  bookings
   app.get('/my-bookings/:email', async(req,res)=>{
     const email = req.params.email
     // console.log(email);
@@ -189,9 +189,15 @@ async function run() {
     res.send(result)
   })
 
+  // for guide getting my assing tour--> bookings
+  app.get('/my-assignTour/:name', async(req,res)=>{
+    const name = req.params.name
+    // console.log(name);
+    const result = await bookingCollection.find({guide_name: name}).toArray()
+    res.send(result)
+  })
+
     
-
-
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
