@@ -181,9 +181,10 @@ async function run() {
 })
 
 
+  // geting bookings by user
   app.get('/my-bookings/:email', async(req,res)=>{
     const email = req.params.email
-    console.log(email);
+    // console.log(email);
     const result = await bookingCollection.find({tourist_email: email}).toArray()
     res.send(result)
   })
