@@ -69,6 +69,13 @@ async function run() {
     res.send(result)
   })
 
+   // add package in package collection-->tour package
+   app.post('/packages', async(req, res) => {
+    const packageData = req.body
+    const result = await packageCollection.insertOne(packageData)
+    res.send(result)
+})
+
   // get a user info by email from db
   app.get('/user/:email', async(req,res)=>{
     const email = req.params.email
@@ -77,6 +84,11 @@ async function run() {
     res.send(result)
   })
 
+  // get all users data from db for manage users
+  app.get('/users',async(req, res) => {
+    const result = await userCollection.find().toArray()
+    res.send(result)
+  })
 
    // save a user data in db
    app.post('/user', async(req, res)=>{
@@ -115,6 +127,33 @@ async function run() {
     }
     const result = await userCollection.updateOne(query, updateDoc, options)
     res.send(result)
+})
+
+// update role in user collection
+app.patch('/users/admin/:email', async(req, res)=>{
+  const email = req.params.email;
+  const userRole = req.body.role;
+  const query = { email };
+
+  // Fetch the current user from the database
+  const user = await userCollection.findOne(query);
+
+  // Check if the role is the same
+  if (user && user.role === userRole) {
+    // If the role is the same, skip the update and send a response
+    return res.send({ message: "🙏Role is already the same", modifiedCount: 0 });
+  }
+
+  // Proceed with the update if the roles are different
+  const updateDoc = {
+    $set: {
+      role: userRole,
+      status: req.body.status,
+    },
+  };
+
+  const result = await userCollection.updateOne(query, updateDoc);
+  res.send(result);
 })
 
   //  app.put('/user', async(req, res)=>{
