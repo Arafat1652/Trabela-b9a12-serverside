@@ -53,6 +53,7 @@ async function run() {
     const storyCollection = client.db('travelDB').collection('storys')
     const bookingCollection = client.db('travelDB').collection('bookings')
     const wishListCollection = client.db('travelDB').collection('wishLists')
+    const commentsCollection = client.db('travelDB').collection('comments')
 
 
     // get all package from package collection
@@ -299,7 +300,6 @@ app.patch('/users/admin/:email', async(req, res)=>{
     res.send(result)
   })
 
-  
   // delete wishlist item form my wishlist
   app.delete('/wishList/:id', async(req, res)=>{
     const id = req.params.id
@@ -307,6 +307,23 @@ app.patch('/users/admin/:email', async(req, res)=>{
     const result = await wishListCollection.deleteOne(query)
     res.send(result)
   })
+
+   // get comment data for ui
+   app.get('/comments/:email', async(req,res)=>{
+    const email = req.params.email
+    // console.log(name);
+    const result = await commentsCollection.find({email: email}).toArray()
+    res.send(result)
+  })
+
+    // save a comment for guide in db
+    app.post('/comments', async(req, res) => {
+      const commentsData = req.body
+      const result = await commentsCollection.insertOne(commentsData)
+      res.send(result)
+  })
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
