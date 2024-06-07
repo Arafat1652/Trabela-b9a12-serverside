@@ -87,8 +87,36 @@ async function run() {
 
   // get all users data from db for manage users
   app.get('/users',async(req, res) => {
-    const result = await userCollection.find().toArray()
-    res.send(result)
+    const size = parseInt(req.query.size)
+    const page = parseInt(req.query.page) - 1
+    // console.log(size, page)
+    const search = req.query.search
+    const filter = req.query.filter
+    // console.log('filter',filter);
+
+    
+    
+      const searchType = req.query.searchType || 'name'; 
+      // console.log(searchType, search);
+
+      let query = {};
+      if (filter) query.role = filter
+
+      if (searchType === 'name') {
+        query.name = { $regex: search, $options: 'i' };
+    } else if (searchType === 'email') {
+        query.email = { $regex: search, $options: 'i' };
+    }
+    // const totalCount = await userCollection.countDocuments();
+    const result = await userCollection.find(query).skip(page * size).limit(size).toArray()
+     res.send(result);
+  })
+
+  // for users coutn
+  app.get('/userCount', async(req, res)=> {
+    
+    const count = await userCollection.countDocuments()
+    res.send({count})
   })
 
    // save a user data in db
@@ -157,33 +185,22 @@ app.patch('/users/admin/:email', async(req, res)=>{
   res.send(result);
 })
 
-  //  app.put('/user', async(req, res)=>{
-  //   const user = req.body;
-  //   const query = {email: user?.email}
-  //   // check if user already exists in db
-  //   const isExist = await userCollection.findOne({email: user?.email})
-  //   if(isExist){
-  //   return res.send(isExist)
-  //   }
-
-  //     // save user for the first time
-  //   const options = {upsert: true}
-  //   const updateDoc={
-  //     $set:{
-  //       ...user,
-  //     }
-  //   }
-  //   const result = await userCollection.updateOne(query, updateDoc, options)
-  //   res.send(result)
-  // })
-
-  
-
-  // get all guides from db--> users
+  // get all guides from db--> users(pagination update)
   app.get('/guides', async(req, res)=>{
-    const result = await userCollection.find({role: "guide"}).toArray()
+      // console.log(email);
+      const size = parseInt(req.query.size)
+      const page = parseInt(req.query.page) - 1
+      // console.log(size, page)
+    const result = await userCollection.find({role: "guide"}).skip(page * size).limit(size).toArray()
     res.send(result)
   })
+
+    // meet our tour guide (pagination count)
+    app.get('/guideCount', async(req, res)=> {
+      const count = await userCollection.countDocuments()
+      res.send({count})
+    })
+
   // get guides by his id
   app.get('/guides/:id', async(req, res)=>{
     const id = req.params.id
@@ -234,12 +251,22 @@ app.patch('/users/admin/:email', async(req, res)=>{
     res.send(result)
 })
 
-  // geting bookings by user-->  bookings
+  // geting bookings by user-->  bookings(pagination added)
   app.get('/my-bookings/:email', async(req,res)=>{
     const email = req.params.email
     // console.log(email);
-    const result = await bookingCollection.find({tourist_email: email}).toArray()
+    const size = parseInt(req.query.size)
+    const page = parseInt(req.query.page) - 1
+    // console.log(size, page)
+    const result = await bookingCollection.find({tourist_email: email}).skip(page * size).limit(size).toArray()
     res.send(result)
+  })
+
+   // in my bookings page this is (pagination count)
+   app.get('/bookingCount', async(req, res)=> {
+    
+    const count = await bookingCollection.countDocuments()
+    res.send({count})
   })
 
   // cancel a bookings from my bookings list -- tourist
@@ -250,13 +277,25 @@ app.patch('/users/admin/:email', async(req, res)=>{
     res.send(result)
   })
 
-  // for guide getting my assing tour--> bookings
+  // for guide getting my assing tour--> bookings(pagination added)
   app.get('/my-assignTour/:name', async(req,res)=>{
     const name = req.params.name
+    const size = parseInt(req.query.size)
+    const page = parseInt(req.query.page) - 1
+    // console.log(size, page)
     // console.log(name);
-    const result = await bookingCollection.find({guide_name: name}).toArray()
+    const result = await bookingCollection.find({guide_name: name}).skip(page * size).limit(size).toArray()
     res.send(result)
   })
+
+  // in assign tour tourCount for pagination my-assignTour
+  
+  app.get('/tourCount', async(req, res)=> {
+    
+    const count = await bookingCollection.countDocuments()
+    res.send({count})
+  })
+
 
   // for guide update the tour status accept or reject
   app.patch('/tourAccepted/:id', async(req, res)=>{
@@ -295,9 +334,18 @@ app.patch('/users/admin/:email', async(req, res)=>{
    // for guide getting my assing tour--> bookings
    app.get('/my-wishlist/:email', async(req,res)=>{
     const email = req.params.email
-    // console.log(name);
-    const result = await wishListCollection.find({email: email}).toArray()
+    const size = parseInt(req.query.size)
+    const page = parseInt(req.query.page) - 1
+    // console.log(size, page)
+    const result = await wishListCollection.find({email: email}).skip(page * size).limit(size).toArray()
     res.send(result)
+  })
+
+   // in my wishlist page this is (pagination count)
+   app.get('/wishCount', async(req, res)=> {
+    
+    const count = await wishListCollection.countDocuments()
+    res.send({count})
   })
 
   // delete wishlist item form my wishlist
