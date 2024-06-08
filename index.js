@@ -1,28 +1,33 @@
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 5000;
 
 
-// const corsOptions = {
-//   origin: [
-//     'http://localhost:5173','https://travel-advisor-a12.web.app','https://travel-advisor-a12.firebaseapp.com'
-//   ],
-//   credentials: true,
-//   optionSuccessStatus: 200,
-// }
+const corsOptions = {
+  origin: [
+    'http://localhost:5173','https://travel-advisor-a12.web.app','https://travel-advisor-a12.firebaseapp.com'
+  ],
+  credentials: true,
+  optionSuccessStatus: 200,
+}
 
 // middlewares
-app.use(
-    cors({
-      origin: [
-        'http://localhost:5173','https://travel-advisor-a12.web.app','https://travel-advisor-a12.firebaseapp.com'
-      ],
-      credentials: true,
-    })
-  );
+
+// app.use(
+//     cors({
+//       origin: [
+//         'http://localhost:5173','https://travel-advisor-a12.web.app','https://travel-advisor-a12.firebaseapp.com'
+//       ],
+//       credentials: true,
+//     })
+//   );
+
+app.use(cors(corsOptions));
 app.use(express.json())
 
 
@@ -55,6 +60,58 @@ async function run() {
     const wishListCollection = client.db('travelDB').collection('wishLists')
     const commentsCollection = client.db('travelDB').collection('comments')
 
+    // jwt
+    app.post('/jwt', async(req, res)=>{
+      const user = req.body
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: '365d'
+      })
+      res.send({token})
+    })
+
+    // middlewares 
+    const verifyToken =(req, res, next)=>{
+      // console.log('inside verify token' ,req.headers.authoraization);
+      if(!req.headers.authoraization){
+        return res.status(401).send({message: 'unauthorized access'})
+      }
+      const token = req.headers.authoraization.split(' ')[1]
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded)=>{
+        if(err){
+          return res.status(401).send({message: 'unauthorized access'})
+        }
+        req.decoded = decoded;
+        next()
+      })
+    }
+
+     // use verifyAdmin after verifytoken
+     const verifyAdmin = async(req, res, next)=>{
+      const email = req.decoded.email
+      const query = {email: email}
+      const user = await userCollection.findOne(query)
+      const isAdmin = user?.role === 'admin'
+      if(!isAdmin){
+       return res.status(403).send({message: 'forbiden access'})
+      }
+      next()
+    }
+
+
+    // verify host middleware
+    const verifyGuide = async (req, res, next) => {
+      console.log('hello')
+      const user = req.decoded
+      const query = { email: user?.email }
+      const result = await userCollection.findOne(query)
+      console.log(result?.role)
+      if (!result || result?.role !== 'guide') {
+        return res.status(401).send({ message: 'unauthorized access!!' })
+      }
+
+      next()
+    }
+
 
     // get all package from package collection
     app.get('/packages', async(req, res)=>{
@@ -71,14 +128,14 @@ async function run() {
   })
 
    // add package in package collection-->tour package
-   app.post('/packages', async(req, res) => {
+   app.post('/packages',verifyToken, verifyAdmin, async(req, res) => {
     const packageData = req.body
     const result = await packageCollection.insertOne(packageData)
     res.send(result)
 })
 
   // get a user info by email from db
-  app.get('/user/:email', async(req,res)=>{
+  app.get('/user/:email',verifyToken, async(req,res)=>{
     const email = req.params.email
     // console.log(email);
     const result = await userCollection.findOne({email: email})
@@ -86,7 +143,7 @@ async function run() {
   })
 
   // get all users data from db for manage users
-  app.get('/users',async(req, res) => {
+  app.get('/users',verifyToken, verifyAdmin, async(req, res) => {
     const size = parseInt(req.query.size)
     const page = parseInt(req.query.page) - 1
     // console.log(size, page)
@@ -113,7 +170,7 @@ async function run() {
   })
 
   // for users coutn
-  app.get('/userCount', async(req, res)=> {
+  app.get('/userCount',verifyToken, verifyAdmin, async(req, res)=> {
     const search = req.query.search
     const filter = req.query.filter
     const searchType = req.query.searchType || 'name'; 
@@ -146,7 +203,7 @@ async function run() {
   })
 
   // for posting guide infos in guideInfos Collection
-  app.put('/user/:email', async(req, res) => {
+  app.put('/user/:email',verifyToken, async(req, res) => {
     const guideInfo = req.body;
     const query = {email: guideInfo?.email}
     const options = {upsert: true}
@@ -265,7 +322,7 @@ app.patch('/users/admin/:email', async(req, res)=>{
 })
 
   // geting bookings by user-->  bookings(pagination added)
-  app.get('/my-bookings/:email', async(req,res)=>{
+  app.get('/my-bookings/:email',verifyToken, async(req,res)=>{
     const email = req.params.email
     // console.log(email);
     const size = parseInt(req.query.size)
@@ -276,11 +333,46 @@ app.patch('/users/admin/:email', async(req, res)=>{
   })
 
    // in my bookings page this is (pagination count)
-   app.get('/bookingCount/:email', async(req, res)=> {
+   app.get('/bookingCount/:email',verifyToken, async(req, res)=> {
     const email = req.params.email
     const count = await bookingCollection.countDocuments({tourist_email: email})
     res.send({count})
   })
+
+  // for more then 3 booking challange part
+  app.get('/counted-booking/:email', async (req, res) => {
+    const email = req.params.email;
+        const count = await bookingCollection.countDocuments({ tourist_email: email });
+        res.send({ count });
+});
+
+  // getting booking price for payment
+  app.get('/payment/:id', async(req, res) => {
+    const id = req.params.id
+    const query = { _id: new ObjectId(id)};
+    const result = await bookingCollection.findOne(query);  
+    res.send({price: result.price})
+  })
+
+  // payment intent 
+  app.post('/create-payment-intent', async(req, res)=>{
+    const {price} = req.body;
+    const amount = parseInt(price * 100)
+    console.log('inside the intent', amount);
+    
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount,
+      currency: "usd",
+      payment_method_types:["card"]
+    })
+    
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    })
+
+  })
+
 
   // cancel a bookings from my bookings list -- tourist
   app.delete('/cancelbook/:id', async(req, res)=>{
@@ -291,7 +383,7 @@ app.patch('/users/admin/:email', async(req, res)=>{
   })
 
   // for guide getting my assing tour--> bookings(pagination added)
-  app.get('/my-assignTour/:name', async(req,res)=>{
+  app.get('/my-assignTour/:name',verifyToken,verifyGuide, async(req,res)=>{
     const name = req.params.name
     const size = parseInt(req.query.size)
     const page = parseInt(req.query.page) - 1
@@ -303,7 +395,7 @@ app.patch('/users/admin/:email', async(req, res)=>{
 
   // in assign tour tourCount for pagination my-assignTour
   
-  app.get('/tourCount/:name', async(req, res)=> {
+  app.get('/tourCount/:name',verifyToken,verifyGuide, async(req, res)=> {
     const name = req.params.name
     const count = await bookingCollection.countDocuments({guide_name: name})
     res.send({count})
