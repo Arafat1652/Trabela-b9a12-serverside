@@ -114,8 +114,21 @@ async function run() {
 
   // for users coutn
   app.get('/userCount', async(req, res)=> {
+    const search = req.query.search
+    const filter = req.query.filter
+    const searchType = req.query.searchType || 'name'; 
+    // console.log(searchType, search);
+
+    let query = {};
+    if (filter) query.role = filter
+
+    if (searchType === 'name') {
+      query.name = { $regex: search, $options: 'i' };
+  } else if (searchType === 'email') {
+      query.email = { $regex: search, $options: 'i' };
+  }
     
-    const count = await userCollection.countDocuments()
+    const count = await userCollection.countDocuments(query)
     res.send({count})
   })
 
@@ -197,7 +210,7 @@ app.patch('/users/admin/:email', async(req, res)=>{
 
     // meet our tour guide (pagination count)
     app.get('/guideCount', async(req, res)=> {
-      const count = await userCollection.countDocuments()
+      const count = await userCollection.countDocuments({role: "guide"})
       res.send({count})
     })
 
@@ -263,9 +276,9 @@ app.patch('/users/admin/:email', async(req, res)=>{
   })
 
    // in my bookings page this is (pagination count)
-   app.get('/bookingCount', async(req, res)=> {
-    
-    const count = await bookingCollection.countDocuments()
+   app.get('/bookingCount/:email', async(req, res)=> {
+    const email = req.params.email
+    const count = await bookingCollection.countDocuments({tourist_email: email})
     res.send({count})
   })
 
@@ -290,9 +303,9 @@ app.patch('/users/admin/:email', async(req, res)=>{
 
   // in assign tour tourCount for pagination my-assignTour
   
-  app.get('/tourCount', async(req, res)=> {
-    
-    const count = await bookingCollection.countDocuments()
+  app.get('/tourCount/:name', async(req, res)=> {
+    const name = req.params.name
+    const count = await bookingCollection.countDocuments({guide_name: name})
     res.send({count})
   })
 
@@ -342,9 +355,9 @@ app.patch('/users/admin/:email', async(req, res)=>{
   })
 
    // in my wishlist page this is (pagination count)
-   app.get('/wishCount', async(req, res)=> {
-    
-    const count = await wishListCollection.countDocuments()
+   app.get('/wishCount/:email', async(req, res)=> {
+    const email = req.params.email
+    const count = await wishListCollection.countDocuments({email: email})
     res.send({count})
   })
 
