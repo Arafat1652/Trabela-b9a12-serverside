@@ -358,7 +358,7 @@ app.patch('/users/admin/:email', async(req, res)=>{
   app.post('/create-payment-intent', async(req, res)=>{
     const {price} = req.body;
     const amount = parseInt(price * 100)
-    console.log('inside the intent', amount);
+    // console.log('inside the intent', amount);
     
 
     const paymentIntent = await stripe.paymentIntents.create({
