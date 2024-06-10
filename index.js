@@ -279,6 +279,16 @@ app.patch('/users/admin/:email', async(req, res)=>{
     res.send(result)
   })
 
+  // chekeing requested or not for guide status
+  app.get('/check-requested/:email', async(req, res) => {
+    const email = req.params.email
+    console.log(email);
+    
+    const query = { email: email};
+    const result = await userCollection.findOne(query);  
+    res.send({status: result.status})
+  })
+
 
   // get all tour type --> types
   app.get('/types', async(req, res) => {
